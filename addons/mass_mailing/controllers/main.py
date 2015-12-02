@@ -3,6 +3,7 @@ import werkzeug
 
 from openerp import http, SUPERUSER_ID
 from openerp.http import request
+from openerp.addons.web.controllers.main import ensure_db
 
 
 class MassMailController(http.Controller):
@@ -19,6 +20,7 @@ class MassMailController(http.Controller):
 
     @http.route(['/mail/mailing/<int:mailing_id>/unsubscribe'], type='http', auth='none')
     def mailing(self, mailing_id, email=None, res_id=None, **post):
+        ensure_db()
         cr, uid, context = request.cr, request.uid, request.context
         MassMailing = request.registry['mail.mass_mailing']
         mailing_ids = MassMailing.exists(cr, SUPERUSER_ID, [mailing_id], context=context)
