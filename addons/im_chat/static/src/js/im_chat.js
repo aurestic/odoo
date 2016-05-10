@@ -1,5 +1,4 @@
 (function(){
-
     "use strict";
 
     var _t = openerp._t;
@@ -41,27 +40,29 @@
             $(window).on("blur", _.bind(this.window_blur, this));
             this.window_title_change();
         },
-        on_notification: function(notification) {
+        on_notification: function(notifications) {
             var self = this;
-            var channel = notification[0];
-            var message = notification[1];
-            var regex_uuid = new RegExp(/(\w{8}(-\w{4}){3}-\w{12}?)/g);
+            _.each(notifications, function (notification) {
+                var channel = notification[0];
+                var message = notification[1];
+                var regex_uuid = new RegExp(/(\w{8}(-\w{4}){3}-\w{12}?)/g);
 
-            // Concern im_chat : if the channel is the im_chat.session or im_chat.status, or a 'private' channel (aka the UUID of a session)
-            if((Array.isArray(channel) && (channel[1] === 'im_chat.session' || channel[1] === 'im_chat.presence')) || (regex_uuid.test(channel))){
-                // message to display in the chatview
-                if (message.type === "message" || message.type === "meta") {
-                    self.received_message(message);
+                // Concern im_chat : if the channel is the im_chat.session or im_chat.status, or a 'private' channel (aka the UUID of a session)
+                if ((Array.isArray(channel) && (channel[1] === 'im_chat.session' || channel[1] === 'im_chat.presence')) || (regex_uuid.test(channel))) {
+                    // message to display in the chatview
+                    if (message.type === "message" || message.type === "meta") {
+                        self.received_message(message);
+                    }
+                    // activate the received session
+                    if (message.uuid) {
+                        self.apply_session(message);
+                    }
+                    // user status notification
+                    if (message.im_status) {
+                        self.trigger("im_new_user_status", [message]);
+                    }
                 }
-                // activate the received session
-                if(message.uuid){
-                    this.apply_session(message);
-                }
-                // user status notification
-                if(message.im_status){
-                    self.trigger("im_new_user_status", [message]);
-                }
-            }
+            });
         },
 
         // window focus unfocus beep and title
@@ -260,7 +261,7 @@
                 openerp.session.rpc("/im_chat/history", data).then(function(messages){
                     if(messages){
                         self.insert_messages(messages);
-    					if(messages.length != NBR_LIMIT_HISTORY){
+                        if(messages.length != NBR_LIMIT_HISTORY){
                             self.loading_history = false;
                         }
                     }else{
@@ -291,9 +292,9 @@
             });
         },
         insert_messages: function(messages){
-        	var self = this;
+            var self = this;
             // avoid duplicated messages
-        	messages = _.filter(messages, function(m){ return !_.contains(_.pluck(self.get("messages"), 'id'), m.id) ; });
+            messages = _.filter(messages, function(m){ return !_.contains(_.pluck(self.get("messages"), 'id'), m.id) ; });
             // escape the message content and set the timezone
             _.map(messages, function(m){
                 if(!m.from_id){
@@ -304,7 +305,7 @@
                 m.create_date = Date.parse(m.create_date).setTimezone("UTC").toString("yyyy-MM-dd HH:mm:ss");
                 return m;
             });
-           	this.set("messages", _.sortBy(this.get("messages").concat(messages), function(m){ return m.id; }));
+            this.set("messages", _.sortBy(this.get("messages").concat(messages), function(m){ return m.id; }));
         },
         render_messages: function(){
             var self = this;
@@ -379,8 +380,8 @@
         smiley: function(str){
             var re_escape = function(str){
                 return String(str).replace(/([.*+?=^!:${}()|[\]\/\\])/g, '\\$1');
-             };
-             var smileys = this.get_smiley_list();
+            };
+            var smileys = this.get_smiley_list();
             _.each(_.keys(smileys), function(key){
                 str = str.replace( new RegExp("(?:^|\\s)(" + re_escape(key) + ")(?:\\s|$)"), ' <span class="smiley">'+smileys[key]+'</span> ');
             });
@@ -493,7 +494,8 @@
             // add a listener for the update of users status
             this.c_manager.on("im_new_user_status", this, this.update_users_status);
 
-            // fetch the unread message and the recent activity (e.i. to re-init in case of refreshing page)
+            // fetch the unread message and the recent activity (e.i. to
+            // re-init in case of refreshing page)
             openerp.session.rpc("/im_chat/init",{}).then(function(notifications) {
                 _.each(notifications, function(notif){
                     self.c_manager.on_notification(notif);
@@ -516,24 +518,27 @@
         search_users_status: function(e) {
             var user_model = new openerp.web.Model("res.users");
             var self = this;
-            return this.user_search_dm.add(user_model.call("im_search", [this.get("current_search"),
-                        USERS_LIMIT], {context:new openerp.web.CompoundContext()})).then(function(result) {
-                self.$(".oe_im_input").val("");
-                var old_widgets = self.widgets;
-                self.widgets = {};
-                self.users = [];
-                _.each(result, function(user) {
-                    user.image_url = openerp.session.url('/web/binary/image', {model:'res.users', field: 'image_small', id: user.id});
-                    var widget = new openerp.im_chat.UserWidget(self, user);
-                    widget.appendTo(self.$(".oe_im_users"));
-                    widget.on("activate_user", self, self.activate_user);
-                    self.widgets[user.id] = widget;
-                    self.users.push(user);
+            return this.user_search_dm.add(user_model.call(
+                "im_search",
+		[this.get("current_search"), USERS_LIMIT],
+		{context:new openerp.web.CompoundContext()}))
+		.then(function(result) {
+                    self.$(".oe_im_input").val("");
+                    var old_widgets = self.widgets;
+                    self.widgets = {};
+                    self.users = [];
+                    _.each(result, function(user) {
+                        user.image_url = openerp.session.url('/web/binary/image', {model:'res.users', field: 'image_small', id: user.id});
+                        var widget = new openerp.im_chat.UserWidget(self, user);
+                        widget.appendTo(self.$(".oe_im_users"));
+                        widget.on("activate_user", self, self.activate_user);
+                        self.widgets[user.id] = widget;
+                        self.users.push(user);
+                    });
+                    _.each(old_widgets, function(w) {
+                        w.destroy();
+                    });
                 });
-                _.each(old_widgets, function(w) {
-                    w.destroy();
-                });
-            });
         },
         switch_display: function() {
             this.calc_box();
@@ -548,10 +553,6 @@
                     right: -this.$el.outerWidth(),
                 }, opt);
             } else {
-                if (! openerp.bus.bus.activated) {
-                    this.do_warn("Instant Messaging is not activated on this server. Try later.", "");
-                    return;
-                }
                 // update the list of user status when show the IM
                 this.search_users_status();
                 this.$el.animate({
@@ -610,3 +611,7 @@
 
     return im_chat;
 })();
+
+// Local Variables:
+// indent-tabs-mode: nil
+// End:
