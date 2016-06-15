@@ -680,6 +680,18 @@ class FloatConverter(osv.AbstractModel):
             formatted = re.sub(r'(?:(0|\d+?)0+)$', r'\1', formatted)
         return formatted
 
+class FloatTimeConverter(osv.AbstractModel):
+    _name = 'ir.qweb.field.float_time'
+    _inherit = 'ir.qweb.field'
+
+    def hours_time_string(self, hours):
+        """ see `hours_time_string` from odoo/addons/resource/resource.py:657 """
+        minutes = int(round(hours * 60))
+        return "%02d:%02d" % divmod(minutes, 60)
+
+    def value_to_html(self, cr, uid, value, field, options=None, context=None):
+        return self.hours_time_string(value)
+
 class DateConverter(osv.AbstractModel):
     _name = 'ir.qweb.field.date'
     _inherit = 'ir.qweb.field'
@@ -1050,6 +1062,17 @@ class QwebWidgetFloat(osv.AbstractModel):
         field = fields.float(digits=options.get('digits'))
         return self.pool['ir.qweb.field.float'].value_to_html(
             qwebcontext.cr, qwebcontext.uid, inner, field,
+            options=options, context=qwebcontext.context)
+
+class QwebWidgetFloatTime(osv.AbstractModel):
+    """ QWeb widget that mimics the ``ir.qweb.field.float_time`` behaviour. """
+    _name = 'ir.qweb.widget.float_time'
+    _inherit = 'ir.qweb.widget'
+
+    def _format(self, inner, options, qwebcontext):
+        inner = self.pool['ir.qweb'].eval(inner, qwebcontext)
+        return self.pool['ir.qweb.field.float_time'].value_to_html(
+            qwebcontext.cr, qwebcontext.uid, inner, None,
             options=options, context=qwebcontext.context)
 
 class HTMLSafe(object):
