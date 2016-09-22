@@ -419,6 +419,38 @@ instance.web.Session.include( /** @lends instance.web.Session# */{
             CHECK_INTERVAL = 1000, id = _.uniqueId('get_file_frame'),
             remove_form = false;
 
+        // Use $.fileDownload() to force the file download, if available
+        if ( typeof $.fileDownload !== 'undefined' ) {
+            var fdparams = _.extend({}, options.data || {}, {token: token});
+            if (this.override_session) {
+                fdparams.session_id = this.session_id;
+            }
+            return $.fileDownload(options.url, {
+                // Android devices don't support POST requests through this library, use GET instead
+                httpMethod: navigator.userAgent.indexOf('android') === -1 ? 'POST' : 'GET',
+                data: fdparams,
+                cookieName: cookie_name,
+                cookieValue: token,
+                checkInterval: CHECK_INTERVAL,
+            }).done(function () {
+                if (options.success) { options.success(); }
+                if (options.complete) { options.complete(); }
+            }).fail(function (responseHtml) {
+                try {
+                    if (options.error) {
+                        var body = document.createElement('body');
+                        body.innerHTML = responseHtml;
+                        var nodes = body.children.length === 0 ? body.childNodes : body.children;
+                        var node = nodes[1] || nodes[0];
+                        options.error(JSON.parse(node.textContent));
+                    }
+                } finally {
+                    // $.always() cannot be chained due to the posibility of responseHtml not being
+                    // a JSON (as in an internal server error). Ensure that complete() is called always
+                    if (options.complete) { options.complete(); }
+                }
+            });
+        }
 
         // iOS devices doesn't allow iframe use the way we do it,
         // opening a new window seems the best way to workaround
