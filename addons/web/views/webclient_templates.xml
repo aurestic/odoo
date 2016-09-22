@@ -19,6 +19,7 @@
             <script type="text/javascript" src="/web/static/lib/jquery.form/jquery.form.js"></script>
 
             <script type="text/javascript" src="/web/static/lib/jquery.ba-bbq/jquery.ba-bbq.js"></script>
+            <script type="text/javascript" src="/web/static/lib/jquery.fileDownload/jquery.fileDownload.js"></script>
 
             <script type="text/javascript" src="/web/static/lib/qweb/qweb2.js"></script>
             <script type="text/javascript" src="/web/static/src/js/openerpframework.js"></script>
