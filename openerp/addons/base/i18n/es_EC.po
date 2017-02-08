@@ -12846,7 +12846,7 @@ msgstr "Arabia Saudí - Contabilidad"
 #. module: base
 #: view:res.users:base.view_users_form_simple_modif
 msgid "Save"
-msgstr "Appraisals, Surveys\""
+msgstr "Guardar"
 
 #. module: base
 #: field:ir.actions.report.xml,attachment:0
