@@ -346,7 +346,7 @@ msgstr ""
 #: code:addons/l10n_be/wizard/l10n_be_vat_intra.py:258
 #, python-format
 msgid "Save"
-msgstr "Appraisals, Surveys\""
+msgstr "Guardar"
 
 #. module: l10n_be
 #: model:account.financial.report,name:l10n_be.account_financial_report_reduc_cmd_encours2g
