@@ -24,7 +24,7 @@ msgstr ""
 #: code:addons/web/static/src/js/search.js:2305
 #, python-format
 msgid "%(field)s %(operator)s"
-msgstr "%(campos)s %(operador)s"
+msgstr "%(field)s %(operator)s"
 
 #. module: web
 #. openerp-web
