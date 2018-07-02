@@ -1927,7 +1927,7 @@ openerp.mail = function (session) {
          * @param {Object} defaults ??
          */
         load_searchview: function (defaults) {
-            var ds_msg = new session.web.DataSetSearch(this, 'mail.message');
+            var ds_msg = new session.web.DataSetSearch(this, 'mail.message', this.context || {});
             this.searchview = new session.web.SearchView(this, ds_msg, false, defaults || {}, false);
             this.searchview.on('search_data', this, this.do_searchview_search);
             this.searchview.appendTo(this.$('.oe_view_manager_view_search'), 
