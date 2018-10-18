@@ -2172,7 +2172,7 @@ msgstr "Imágenes de muestra"
 #: code:addons/website/static/src/xml/website.seo.xml:69
 #, python-format
 msgid "Save"
-msgstr "Appraisals, Surveys\""
+msgstr "Guardar"
 
 #. module: website
 #. openerp-web

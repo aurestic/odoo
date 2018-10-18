@@ -375,7 +375,7 @@ msgstr "Pedido de Venta"
 #: code:addons/l10n_be_intrastat/wizard/xml_decl.py:156
 #, python-format
 msgid "Save"
-msgstr "Appraisals, Surveys\""
+msgstr "Guardar"
 
 #. module: l10n_be_intrastat
 #: selection:l10n_be_intrastat_xml.xml_decl,month:0
