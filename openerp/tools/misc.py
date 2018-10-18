@@ -214,7 +214,7 @@ def _fileopen(path, mode, basedir, pathinfo, basename=None):
         if name.startswith(addons_path):
             break
     else:
-        raise ValueError("Unknown path: %s" % name)
+        _logger.error('Unknown path: %s', name)
 
     if basename is None:
         basename = name
