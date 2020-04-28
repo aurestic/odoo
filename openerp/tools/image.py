@@ -24,13 +24,28 @@ try:
 except ImportError:
     import StringIO
 
-from PIL import Image
+from PIL import ExifTags, Image
 from PIL import ImageEnhance
 from random import randint
 
 # Preload PIL with the minimal subset of image formats we need
 Image.preinit()
 Image._initialized = 2
+
+EXIF_TAG_ORIENTATION = 0x112
+# The target is to have 1st row/col to be top/left
+# Note: rotate is counterclockwise
+EXIF_TAG_ORIENTATION_TO_TRANSPOSE_METHODS = {  # Initial side on 1st row/col:
+    0: [],                                          # reserved
+    1: [],                                          # top/left
+    2: [Image.FLIP_LEFT_RIGHT],                     # top/right
+    3: [Image.ROTATE_180],                          # bottom/right
+    4: [Image.FLIP_TOP_BOTTOM],                     # bottom/left
+    5: [Image.FLIP_LEFT_RIGHT, Image.ROTATE_90],    # left/top
+    6: [Image.ROTATE_270],                          # right/top
+    7: [Image.FLIP_TOP_BOTTOM, Image.ROTATE_90],    # right/bottom
+    8: [Image.ROTATE_90],                           # left/bottom
+}
 
 # ----------------------------------------
 # Image resizing
@@ -79,6 +94,13 @@ def image_resize_image(base64_source, size=(1024, 1024), encoding='base64', file
     filetype = {
         'BMP': 'PNG',
     }.get(filetype, filetype)
+
+    exif = image._getexif()
+    if exif:
+        orientation = int(exif.get(EXIF_TAG_ORIENTATION, 0))
+        tm = EXIF_TAG_ORIENTATION_TO_TRANSPOSE_METHODS.get(orientation, [])
+        for method in tm:
+            image = image.transpose(method)
 
     asked_width, asked_height = size
     if asked_width is None:
