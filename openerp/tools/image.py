@@ -95,12 +95,15 @@ def image_resize_image(base64_source, size=(1024, 1024), encoding='base64', file
         'BMP': 'PNG',
     }.get(filetype, filetype)
 
-    exif = image._getexif()
-    if exif:
-        orientation = int(exif.get(EXIF_TAG_ORIENTATION, 0))
-        tm = EXIF_TAG_ORIENTATION_TO_TRANSPOSE_METHODS.get(orientation, [])
-        for method in tm:
-            image = image.transpose(method)
+    try:
+        exif = image._getexif()
+        if exif:
+            orientation = int(exif.get(EXIF_TAG_ORIENTATION, 0))
+            tm = EXIF_TAG_ORIENTATION_TO_TRANSPOSE_METHODS.get(orientation, [])
+            for method in tm:
+                image = image.transpose(method)
+    except Exception:
+        pass
 
     asked_width, asked_height = size
     if asked_width is None:
