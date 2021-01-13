@@ -52,19 +52,8 @@ class stock_transfer_details(models.TransientModel):
         if not picking.pack_operation_ids:
             picking.do_prepare_partial()
         for op in picking.pack_operation_ids:
-            item = {
-                'packop_id': op.id,
-                'product_id': op.product_id.id,
-                'product_uom_id': op.product_uom_id.id,
-                'quantity': op.product_qty,
-                'package_id': op.package_id.id,
-                'lot_id': op.lot_id.id,
-                'sourceloc_id': op.location_id.id,
-                'destinationloc_id': op.location_dest_id.id,
-                'result_package_id': op.result_package_id.id,
-                'date': op.date,
-                'owner_id': op.owner_id.id,
-            }
+            item = self.get_item_line_data(cr, uid, op)
+            item.update({'packop_id': op.id})
             if op.product_id:
                 items.append(item)
             elif op.package_id:
@@ -72,6 +61,21 @@ class stock_transfer_details(models.TransientModel):
         res.update(item_ids=items)
         res.update(packop_ids=packs)
         return res
+
+    @api.model
+    def get_item_line_data(self, pack_operation):
+        return {
+            'product_id': pack_operation.product_id.id,
+            'product_uom_id': pack_operation.product_uom_id.id,
+            'quantity': pack_operation.product_qty,
+            'package_id': pack_operation.package_id.id,
+            'lot_id': pack_operation.lot_id.id,
+            'sourceloc_id': pack_operation.location_id.id,
+            'destinationloc_id': pack_operation.location_dest_id.id,
+            'result_package_id': pack_operation.result_package_id.id,
+            'date': pack_operation.date,
+            'owner_id': pack_operation.owner_id.id,
+        }
 
     @api.model
     def get_pack_operation_data(self, prod):
