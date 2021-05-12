@@ -13,17 +13,23 @@ from odoo.addons.portal.controllers.portal import CustomerPortal, pager as porta
 
 class CustomerPortal(CustomerPortal):
 
+    def _get_partner_sale_domain(self):
+        partner = request.env.user.partner_id
+        return [(
+            'message_partner_ids',
+            'child_of',
+            [partner.commercial_partner_id.id]
+        )]
+
     def _prepare_portal_layout_values(self):
         values = super(CustomerPortal, self)._prepare_portal_layout_values()
-        partner = request.env.user.partner_id
+        partner_domain = self._get_partner_sale_domain()
 
         SaleOrder = request.env['sale.order']
-        quotation_count = SaleOrder.search_count([
-            ('message_partner_ids', 'child_of', [partner.commercial_partner_id.id]),
+        quotation_count = SaleOrder.search_count(partner_domain + [
             ('state', 'in', ['sent', 'cancel'])
         ])
-        order_count = SaleOrder.search_count([
-            ('message_partner_ids', 'child_of', [partner.commercial_partner_id.id]),
+        order_count = SaleOrder.search_count(partner_domain + [
             ('state', 'in', ['sale', 'done'])
         ])
 
@@ -74,11 +80,11 @@ class CustomerPortal(CustomerPortal):
     @http.route(['/my/quotes', '/my/quotes/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_quotes(self, page=1, date_begin=None, date_end=None, sortby=None, **kw):
         values = self._prepare_portal_layout_values()
-        partner = request.env.user.partner_id
         SaleOrder = request.env['sale.order']
 
-        domain = [
-            ('message_partner_ids', 'child_of', [partner.commercial_partner_id.id]),
+        partner_domain = self._get_partner_sale_domain()
+
+        domain = partner_domain + [
             ('state', 'in', ['sent', 'cancel'])
         ]
 
@@ -126,11 +132,11 @@ class CustomerPortal(CustomerPortal):
     @http.route(['/my/orders', '/my/orders/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_orders(self, page=1, date_begin=None, date_end=None, sortby=None, **kw):
         values = self._prepare_portal_layout_values()
-        partner = request.env.user.partner_id
         SaleOrder = request.env['sale.order']
 
-        domain = [
-            ('message_partner_ids', 'child_of', [partner.commercial_partner_id.id]),
+        partner_domain = self._get_partner_sale_domain()
+
+        domain = partner_domain + [
             ('state', 'in', ['sale', 'done'])
         ]
 
