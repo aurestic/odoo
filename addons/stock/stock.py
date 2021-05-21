@@ -2697,6 +2697,12 @@ class stock_move(osv.osv):
     def _get_taxes(self, cr, uid, move, context=None):
         return []
 
+    @api.multi
+    def get_transfer_qty(self):
+        self.ensure_one()
+        return self.product_qty
+
+
 class stock_inventory(osv.osv):
     _name = "stock.inventory"
     _description = "Inventory"
@@ -4280,6 +4286,11 @@ class stock_pack_operation(osv.osv):
                 values.update(update_dict)
             operation_id = self.create(cr, uid, values, context=context)
         return operation_id
+
+    @api.multi
+    def get_reserve_qty(self):
+        self.ensure_one()
+        return self.product_qty
 
 
 class stock_move_operation_link(osv.osv):
