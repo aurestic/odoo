@@ -1292,9 +1292,9 @@ class stock_picking(osv.osv):
         moves = sorted([x for x in picking.move_lines if x.state not in ('done', 'cancel')], key=lambda x: (((x.state == 'assigned') and -2 or 0) + (x.partially_available and -1 or 0)))
         for move in moves:
             if not prod2move_ids.get(move.product_id.id):
-                prod2move_ids[move.product_id.id] = [{'move': move, 'remaining_qty': move.product_qty}]
+                prod2move_ids[move.product_id.id] = [{'move': move, 'remaining_qty': move.get_transfer_qty()}]
             else:
-                prod2move_ids[move.product_id.id].append({'move': move, 'remaining_qty': move.product_qty})
+                prod2move_ids[move.product_id.id].append({'move': move, 'remaining_qty': move.get_transfer_qty()})
 
         need_rereserve = False
         #sort the operations in order to give higher priority to those with a package, then a serial number
@@ -1323,7 +1323,7 @@ class stock_picking(osv.osv):
                         need_rereserve = True
             elif ops.product_id.id:
                 #Check moves with same product
-                qty_to_assign = uom_obj._compute_qty_obj(cr, uid, ops.product_uom_id, ops.product_qty, ops.product_id.uom_id, context=context)
+                qty_to_assign = uom_obj._compute_qty_obj(cr, uid, ops.product_uom_id, ops.get_reserve_qty(), ops.product_id.uom_id, context=context)
                 precision_rounding = ops.product_id.uom_id.rounding
                 for move_dict in prod2move_ids.get(ops.product_id.id, []):
                     move = self.recompute_remaining_qty_get_move(
@@ -2506,6 +2506,11 @@ class stock_move(osv.osv):
                 if not move_qty.get(move.id):
                     raise osv.except_osv(_("Error"), _("The roundings of your Unit of Measures %s on the move vs. %s on the product don't allow to do these operations or you are not transferring the picking at once. ") % (move.product_uom.name, move.product_id.uom_id.name))
                 move_qty[move.id] -= record.qty
+        if context.get('no_check_remaining_qtys'):
+            map(
+                lambda key: move_qty.update({key: .0}),
+                move_qty.keys()
+            )
         #Check for remaining qtys and unreserve/check move_dest_id in
         move_dest_ids = set()
         for move in self.browse(cr, uid, ids, context=context):
@@ -2691,6 +2696,12 @@ class stock_move(osv.osv):
 
     def _get_taxes(self, cr, uid, move, context=None):
         return []
+
+    @api.multi
+    def get_transfer_qty(self):
+        self.ensure_one()
+        return self.product_qty
+
 
 class stock_inventory(osv.osv):
     _name = "stock.inventory"
@@ -4275,6 +4286,11 @@ class stock_pack_operation(osv.osv):
                 values.update(update_dict)
             operation_id = self.create(cr, uid, values, context=context)
         return operation_id
+
+    @api.multi
+    def get_reserve_qty(self):
+        self.ensure_one()
+        return self.product_qty
 
 
 class stock_move_operation_link(osv.osv):
