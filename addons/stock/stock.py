@@ -2452,6 +2452,10 @@ class stock_move(osv.osv):
             if vals:
                 self.write(cr, uid, [move.id], vals, context=context)
 
+    @api.model
+    def pre_check_remaining_qtys(self, move_qty):
+        pass
+
     def action_done(self, cr, uid, ids, context=None):
         """ Process completely the moves given as ids and if all moves are done, it will finish the picking.
         """
@@ -2506,11 +2510,8 @@ class stock_move(osv.osv):
                 if not move_qty.get(move.id):
                     raise osv.except_osv(_("Error"), _("The roundings of your Unit of Measures %s on the move vs. %s on the product don't allow to do these operations or you are not transferring the picking at once. ") % (move.product_uom.name, move.product_id.uom_id.name))
                 move_qty[move.id] -= record.qty
-        if context.get('no_check_remaining_qtys'):
-            map(
-                lambda key: move_qty.update({key: .0}),
-                move_qty.keys()
-            )
+
+        self.pre_check_remaining_qtys(cr, uid, move_qty, context=context)
         #Check for remaining qtys and unreserve/check move_dest_id in
         move_dest_ids = set()
         for move in self.browse(cr, uid, ids, context=context):
