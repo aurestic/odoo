@@ -243,7 +243,8 @@ class Website(models.Model):
             pricelist_id = pricelist_id or partner.property_product_pricelist.id
 
             # check for change of partner_id ie after signup
-            if sale_order.partner_id.id != partner.id and request.website.partner_id.id != partner.id:
+            if sale_order.partner_id.id != partner.id and request.website.partner_id.id != partner.id and \
+                    not self._context.get('no_update_partner'):
                 flag_pricelist = False
                 if pricelist_id != sale_order.pricelist_id.id:
                     flag_pricelist = True
