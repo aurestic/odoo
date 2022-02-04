@@ -2,6 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import _, api, exceptions, fields, models, modules
+from odoo.exceptions import AccessError
 from odoo.tools import pycompat
 from odoo.addons.base.res.res_users import is_selection_groups
 
@@ -127,24 +128,28 @@ class Users(models.Model):
 
     @api.model
     def activity_user_count(self):
-        query = """SELECT m.id, count(*), act.res_model as model,
-                        CASE
-                            WHEN %(today)s::date - act.date_deadline::date = 0 Then 'today'
-                            WHEN %(today)s::date - act.date_deadline::date > 0 Then 'overdue'
-                            WHEN %(today)s::date - act.date_deadline::date < 0 Then 'planned'
-                        END AS states
-                    FROM mail_activity AS act
-                    JOIN ir_model AS m ON act.res_model_id = m.id
-                    WHERE user_id = %(user_id)s
-                    GROUP BY m.id, states, act.res_model;
-                    """
+        query = """
+            SELECT m.id, act.res_id as res_id, act.res_model as model,
+                CASE
+                    WHEN %(today)s::date - act.date_deadline::date = 0 Then 'today'
+                    WHEN %(today)s::date - act.date_deadline::date > 0 Then 'overdue'
+                    WHEN %(today)s::date - act.date_deadline::date < 0 Then 'planned'
+                END AS states
+            FROM mail_activity AS act
+            JOIN ir_model AS m ON act.res_model_id = m.id
+            WHERE user_id = %(user_id)s
+            GROUP BY m.id, act.res_id, states, act.res_model;
+        """
         self.env.cr.execute(query, {
             'today': fields.Date.context_today(self),
             'user_id': self.env.uid,
         })
         activity_data = self.env.cr.dictfetchall()
         model_ids = [a['id'] for a in activity_data]
-        model_names = {n[0]:n[1] for n in self.env['ir.model'].browse(model_ids).name_get()}
+        model_names = {
+            n[0]: n[1]
+            for n in self.env['ir.model'].browse(model_ids).name_get()
+        }
 
         user_activities = {}
         for activity in activity_data:
@@ -152,13 +157,25 @@ class Users(models.Model):
                 user_activities[activity['model']] = {
                     'name': model_names[activity['id']],
                     'model': activity['model'],
-                    'icon': modules.module.get_module_icon(self.env[activity['model']]._original_module),
-                    'total_count': 0, 'today_count': 0, 'overdue_count': 0, 'planned_count': 0,
+                    'icon': modules.module.get_module_icon(
+                        self.env[activity['model']]._original_module
+                    ),
+                    'total_count': 0,
+                    'today_count': 0,
+                    'overdue_count': 0,
+                    'planned_count': 0,
                 }
-            user_activities[activity['model']]['%s_count' % activity['states']] += activity['count']
-            if activity['states'] in ('today','overdue'):
-                user_activities[activity['model']]['total_count'] += activity['count']
-
+            try:
+                self.env[activity['model']].browse(
+                    activity['res_id']
+                ).check_access_rule('read')
+            except AccessError:
+                continue
+            user_activities[activity['model']][
+                '%s_count' % activity['states']
+            ] += 1
+            if activity['states'] in ('today', 'overdue'):
+                user_activities[activity['model']]['total_count'] += 1
         return list(user_activities.values())
 
 
