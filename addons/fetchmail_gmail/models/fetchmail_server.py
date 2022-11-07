@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from imaplib import IMAP4, IMAP4_SSL
+
 from odoo import api, models, _
 from odoo.exceptions import UserError
 
@@ -40,3 +42,16 @@ class FetchmailServer(models.Model):
             connection.select('INBOX')
         else:
             super(FetchmailServer, self)._imap_login(connection)
+
+    @api.multi
+    def connect(self):
+        self.ensure_one()
+        if self.type == 'imap' and self.use_google_gmail_service:
+            if self.is_ssl:
+                connection = IMAP4_SSL(self.server, int(self.port))
+            else:
+                connection = IMAP4(self.server, int(self.port))
+            self._imap_login(connection)
+        else:
+            connection = super(FetchmailServer, self).connect()
+        return connection
