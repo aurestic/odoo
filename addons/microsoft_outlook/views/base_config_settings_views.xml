@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+<data>
+
+<record id="view_general_configuration" model="ir.ui.view">
+    <field name="name">view.general.configuration.inherit.microsoft_outlook</field>
+    <field name="model">base.config.settings</field>
+    <field name="inherit_id" ref="base_setup.view_general_configuration"/>
+    <field name="arch" type="xml">
+        <xpath expr="//div[@name='email']" position="after">
+            <label for="id" string="Outlook Credentials"/>
+            <div name="email">
+                <div name="email.outlook_credentials">
+                    <label string="Client ID" for="microsoft_outlook_client_identifier"/>
+                    <field name="microsoft_outlook_client_identifier"/>
+                </div>
+                <div name="outlook_client_secret">
+                    <label string="Client Secret" for="microsoft_outlook_client_secret"/>
+                    <field name="microsoft_outlook_client_secret"/>
+                </div>
+            </div>
+        </xpath>
+    </field>
+</record>
+
+</data>
+</openerp>

@@ -1,0 +1,93 @@
+# -*- coding: utf-8 -*-
+# Part of Odoo. See LICENSE file for full copyright and licensing details.
+
+import json
+import logging
+import passlib.utils
+import werkzeug
+from itertools import izip
+
+from werkzeug.exceptions import Forbidden
+from werkzeug.urls import url_encode
+
+
+from openerp import http
+from openerp.exceptions import Warning as UserError
+from openerp.http import request
+
+def _consteq(str1, str2):
+    """ Constant-time string comparison. Suitable to compare bytestrings of fixed,
+        known length only, because length difference is optimized. """
+    return len(str1) == len(str2) and sum(ord(x)^ord(y) for x, y in izip(str1, str2)) == 0
+
+consteq = getattr(passlib.utils, 'consteq', _consteq)
+
+
+_logger = logging.getLogger(__name__)
+
+
+class MicrosoftOutlookController(http.Controller):
+    @http.route('/microsoft_outlook/confirm', type='http', auth='user')
+    def microsoft_outlook_callback(self, code=None, state=None, error_description=None, **kwargs):
+        """Callback URL during the OAuth process.
+
+        Outlook redirects the user browser to this endpoint with the authorization code.
+        We will fetch the refresh token and the access token thanks to this authorization
+        code and save those values on the given mail server.
+        """
+        if not request.env.user.has_group('base.group_system'):
+            _logger.error('Microsoft Outlook: Non system user try to link an Outlook account.')
+            raise Forbidden()
+
+        try:
+            state = json.loads(state)
+            model_name = state['model']
+            rec_id = state['id']
+            csrf_token = u"{}".format(state['csrf_token'])
+        except Exception:
+            _logger.error('Microsoft Outlook: Wrong state value %r.', state)
+            raise Forbidden()
+
+        if error_description:
+            return request.render('microsoft_outlook.microsoft_outlook_oauth_error', {
+                'error': error_description,
+                'model_name': model_name,
+                'rec_id': rec_id,
+            })
+
+        model = request.env[model_name]
+
+        if not 'microsoft.outlook.mixin' in model._inherit:
+            # The model must inherits from the "microsoft.outlook.mixin" mixin
+            raise Forbidden()
+
+        record = model.browse(rec_id).exists()
+        if not record:
+            raise Forbidden()
+
+        outlook_csrf_token = u"{}".format(record._get_outlook_csrf_token())
+        if not csrf_token or not consteq(csrf_token, outlook_csrf_token):
+            _logger.error('Microsoft Outlook: Wrong CSRF token during Outlook authentication.')
+            raise Forbidden()
+
+        try:
+            refresh_token, access_token, expiration = record._fetch_outlook_refresh_token(code)
+        except UserError as e:
+            return request.render('microsoft_outlook.microsoft_outlook_oauth_error', {
+                'error': str(e.name),
+                'model_name': model_name,
+                'rec_id': rec_id,
+            })
+
+        record.write({
+            'microsoft_outlook_refresh_token': refresh_token,
+            'microsoft_outlook_access_token': access_token,
+            'microsoft_outlook_access_token_expiration': expiration,
+        })
+        url_params = {
+            'id': rec_id,
+            'model': model_name,
+            'view_type': 'form'
+        }
+        url = '/web?#' + url_encode(url_params)
+        return werkzeug.utils.redirect(url, 303)
