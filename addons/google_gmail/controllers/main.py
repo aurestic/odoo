@@ -45,14 +45,14 @@ class GoogleGmailController(http.Controller):
             state = json.loads(state)
             model_name = state['model']
             rec_id = state['id']
-            csrf_token = state['csrf_token']
+            csrf_token = u"{}".format(state['csrf_token'])
         except Exception:
             _logger.error('Google Gmail: Wrong state value %r.', state)
             raise Forbidden()
 
         model = request.env[model_name]
 
-        if not issubclass(type(model), request.env.registry['google.gmail.mixin']):
+        if not 'google.gmail.mixin' in model._inherit:
             # The model must inherits from the "google.gmail.mixin" mixin
             raise Forbidden()
 
@@ -60,7 +60,8 @@ class GoogleGmailController(http.Controller):
         if not record:
             raise Forbidden()
 
-        if not csrf_token or not consteq(csrf_token, record._get_gmail_csrf_token()):
+        outlook_csrf_token = u"{}".format(record._get_gmail_csrf_token())
+        if not csrf_token or not consteq(csrf_token, outlook_csrf_token):
             _logger.error('Google Gmail: Wrong CSRF token during Gmail authentication.')
             raise Forbidden()
 

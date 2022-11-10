@@ -43,7 +43,7 @@ class MicrosoftOutlookController(http.Controller):
             state = json.loads(state)
             model_name = state['model']
             rec_id = state['id']
-            csrf_token = state['csrf_token']
+            csrf_token = u"{}".format(state['csrf_token'])
         except Exception:
             _logger.error('Microsoft Outlook: Wrong state value %r.', state)
             raise Forbidden()
@@ -57,7 +57,7 @@ class MicrosoftOutlookController(http.Controller):
 
         model = request.env[model_name]
 
-        if not issubclass(type(model), request.env.registry['microsoft.outlook.mixin']):
+        if not 'microsoft.outlook.mixin' in model._inherit:
             # The model must inherits from the "microsoft.outlook.mixin" mixin
             raise Forbidden()
 
@@ -65,7 +65,8 @@ class MicrosoftOutlookController(http.Controller):
         if not record:
             raise Forbidden()
 
-        if not csrf_token or not consteq(csrf_token, record._get_outlook_csrf_token()):
+        outlook_csrf_token = u"{}".format(record._get_outlook_csrf_token())
+        if not csrf_token or not consteq(csrf_token, outlook_csrf_token):
             _logger.error('Microsoft Outlook: Wrong CSRF token during Outlook authentication.')
             raise Forbidden()
 
