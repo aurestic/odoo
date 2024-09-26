@@ -283,7 +283,7 @@ class AccountBankStatement(models.Model):
         # Note that marking the field is not enough as we also have to recompute all its other fields that are depending on 'previous_statement_id'
         # hence the need to call modified afterwards.
         # The reason we are doing this here and not in a compute field is that it is not easy to write dependencies for such field.
-        next_statements_to_recompute = self.search([('previous_statement_id', 'in', [st.previous_statement_id.id for st in res]), ('id', 'not in', res.ids), ('journal_id', 'in', res.journal_id.ids)])
+        next_statements_to_recompute = self.search([('previous_statement_id', 'in', res.mapped("previous_statement_id").ids), ('id', 'not in', res.ids), ('journal_id', 'in', res.journal_id.ids)])
         if next_statements_to_recompute:
             self.env.add_to_compute(self._fields['previous_statement_id'], next_statements_to_recompute)
             next_statements_to_recompute.modified(['previous_statement_id'])
