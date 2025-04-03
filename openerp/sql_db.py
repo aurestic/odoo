@@ -205,9 +205,6 @@ class Cursor(object):
 
         self.cache = {}
 
-        # event handlers, see method after() below
-        self._event_handlers = {'commit': [], 'rollback': []}
-
     def __build_dict(self, row):
         return {d.name: row[i] for i, d in enumerate(self._obj.description)}
     def dictfetchone(self):
@@ -373,44 +370,16 @@ class Cursor(object):
         self._cnx.set_isolation_level(isolation_level)
 
     @check
-    def after(self, event, func):
-        """ Register an event handler.
-
-            :param event: the event, either `'commit'` or `'rollback'`
-            :param func: a callable object, called with no argument after the
-                event occurs
-
-            Be careful when coding an event handler, since any operation on the
-            cursor that was just committed/rolled back will take place in the
-            next transaction that has already begun, and may still be rolled
-            back or committed independently. You may consider the use of a
-            dedicated temporary cursor to do some database operation.
-        """
-        self._event_handlers[event].append(func)
-
-    def _pop_event_handlers(self):
-        # return the current handlers, and reset them on self
-        result = self._event_handlers
-        self._event_handlers = {'commit': [], 'rollback': []}
-        return result
-
-    @check
     def commit(self):
         """ Perform an SQL `COMMIT`
         """
-        result = self._cnx.commit()
-        for func in self._pop_event_handlers()['commit']:
-            func()
-        return result
+        return self._cnx.commit()
 
     @check
     def rollback(self):
         """ Perform an SQL `ROLLBACK`
         """
-        result = self._cnx.rollback()
-        for func in self._pop_event_handlers()['rollback']:
-            func()
-        return result
+        return self._cnx.rollback()
 
     def __enter__(self):
         """ Using the cursor as a contextmanager automatically commits and
