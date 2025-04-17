@@ -1008,6 +1008,8 @@ class mrp_production(osv.osv):
                         break
                     if consume['product_id'] != raw_material_line.product_id.id:
                         continue
+                    if consume['lot_id'] and consume['lot_id'] != raw_material_line.restrict_lot_id.id:
+                        continue
                     consumed_qty = min(remaining_qty, raw_material_line.product_qty)
                     stock_mov_obj.action_consume(cr, uid, [raw_material_line.id], consumed_qty, raw_material_line.location_id.id,
                                                  restrict_lot_id=consume['lot_id'], consumed_for=main_production_move, context=context)
