@@ -960,7 +960,6 @@ class mrp_production(osv.osv):
         production = self.browse(cr, uid, production_id, context=context)
         production_qty_uom = uom_obj._compute_qty(cr, uid, production.product_uom.id, production_qty, production.product_id.uom_id.id)
         precision = self.pool['decimal.precision'].precision_get(cr, uid, 'Product Unit of Measure')
-        from pudb.remote import set_trace; set_trace(term_size=(237, 63))
         main_production_move = False
         if production_mode == 'consume_produce':
             # To produce remaining qty of final product
