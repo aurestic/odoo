@@ -960,7 +960,7 @@ class mrp_production(osv.osv):
         production = self.browse(cr, uid, production_id, context=context)
         production_qty_uom = uom_obj._compute_qty(cr, uid, production.product_uom.id, production_qty, production.product_id.uom_id.id)
         precision = self.pool['decimal.precision'].precision_get(cr, uid, 'Product Unit of Measure')
-
+        from pudb.remote import set_trace; set_trace(term_size=(237, 63))
         main_production_move = False
         if production_mode == 'consume_produce':
             # To produce remaining qty of final product
@@ -1008,7 +1008,7 @@ class mrp_production(osv.osv):
                         break
                     if consume['product_id'] != raw_material_line.product_id.id:
                         continue
-                    if consume['lot_id'] and consume['lot_id'] != raw_material_line.restrict_lot_id.id:
+                    if consume['lot_id'] and raw_material_line.restrict_lot_id and consume['lot_id'] != raw_material_line.restrict_lot_id.id:
                         continue
                     consumed_qty = min(remaining_qty, raw_material_line.product_qty)
                     stock_mov_obj.action_consume(cr, uid, [raw_material_line.id], consumed_qty, raw_material_line.location_id.id,
