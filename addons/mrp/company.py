@@ -26,6 +26,7 @@ class company(osv.osv):
     _columns = {
         'manufacturing_lead': fields.float('Manufacturing Lead Time', required=True,
             help="Security days for each manufacturing operation."),
+        'manufacturing_check_lots': fields.boolean('Check Lots when Manufacturing',),
     }
     _defaults = {
         'manufacturing_lead': lambda *a: 1.0,
