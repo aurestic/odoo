@@ -1008,7 +1008,7 @@ class mrp_production(osv.osv):
                     if consume['product_id'] != raw_material_line.product_id.id:
                         continue
                     if (
-                        production.company_id.manufacturing_check_lots and
+                        context.get('check_lots_consumed') and
                         consume['lot_id'] and
                         consume['lot_id'] != raw_material_line.restrict_lot_id.id
                     ):
