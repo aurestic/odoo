@@ -10,7 +10,6 @@
             <field name="arch" type="xml">
                 <xpath expr="//group[@name='logistics_grp']" position="inside">
                    <field name="manufacturing_lead"/>
-                   <field name="manufacturing_check_lots" />
                 </xpath>
             </field>
         </record>
